@@ -1,6 +1,8 @@
 package com.spring.security.jwt.config;
 
+import com.spring.security.jwt.authenticationproviders.JWTAuthenticationProvider;
 import com.spring.security.jwt.filters.JWTAuthenticationFilter;
+import com.spring.security.jwt.filters.JwtValidationFilter;
 import com.spring.security.jwt.util.JWTUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,11 +24,13 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final JWTUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
 
-    public SecurityConfig(UserDetailsService userDetailsService) {
+    public SecurityConfig(UserDetailsService userDetailsService, JWTUtil jwtUtil) {
         this.userDetailsService = userDetailsService;
+        this.jwtUtil = jwtUtil;
     }
 
     @Bean
@@ -35,6 +39,13 @@ public class SecurityConfig {
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
+
+    @Bean
+    public JWTAuthenticationProvider jwtAuthenticationProvider() {
+        return new JWTAuthenticationProvider(jwtUtil, userDetailsService);
+    }
+
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -48,6 +59,9 @@ public class SecurityConfig {
         // Authentication filter responsible for login
         JWTAuthenticationFilter jwtAuthFilter = new JWTAuthenticationFilter(authenticationManager, jwtUtil);
 
+        // Validation filter for checking JWT in every request
+        JwtValidationFilter jwtValidationFilter = new JwtValidationFilter(authenticationManager);
+
 
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/user-register").permitAll()
@@ -55,14 +69,16 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(csrf -> csrf.disable())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // generate token filter
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)  // generate token filter
+                .addFilterAfter(jwtValidationFilter, JWTAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
     public AuthenticationManager authenticationManager() {
         return new ProviderManager(Arrays.asList(
-                daoAuthenticationProvider()
+                daoAuthenticationProvider(),
+                jwtAuthenticationProvider()
         ));
         //other way get AuthenticationManager and in it list your provider
     }

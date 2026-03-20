@@ -47,5 +47,26 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 }
+/*
+User (React)
+     │
+             │ 1. Login (username/password)
+     ▼
+Auth Server (Spring Boot / Keycloak)
+     │
+             │ ✔ Validate username/password (DB check)
+     │ ✔ Generate JWT
+     ▼
+User gets JWT
+     │
+             │ 2. API Request with JWT
+     ▼
+Backend (Spring Boot - Spring Security)
+     │
+             │ ✔ Validate JWT (signature + expiry) (Backend validates token locally using secret/public key) and Auth Server and Backend are configured with the same key (or related keys) Auth Server → signs JWT using SECRET_KEY Backend → verifies JWT using SAME SECRET_KEY
+     │ ✔ Extract user
+     ▼
+Protected API Response
 
 
+*/
