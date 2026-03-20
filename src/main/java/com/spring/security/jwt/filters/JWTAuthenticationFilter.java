@@ -4,6 +4,7 @@ import com.spring.security.jwt.dto.LoginRequest;
 import com.spring.security.jwt.util.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,8 +43,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         Authentication authResult = authenticationManager.authenticate(authToken);
 
         if (authResult.isAuthenticated()) {
-            String token = jwtUtil.generateToken(authResult.getName(), 15); //15min
-            response.setHeader("Authorization", "Bearer " + token); //response will be in header under Authorization Key
+            jwtUtil.generateAccessAndRefreshToken(response, authResult);
         }
     }
 }

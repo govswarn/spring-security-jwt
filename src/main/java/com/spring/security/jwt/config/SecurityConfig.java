@@ -2,6 +2,7 @@ package com.spring.security.jwt.config;
 
 import com.spring.security.jwt.authenticationproviders.JWTAuthenticationProvider;
 import com.spring.security.jwt.filters.JWTAuthenticationFilter;
+import com.spring.security.jwt.filters.JWTRefreshFilter;
 import com.spring.security.jwt.filters.JwtValidationFilter;
 import com.spring.security.jwt.util.JWTUtil;
 import org.springframework.context.annotation.Bean;
@@ -62,15 +63,19 @@ public class SecurityConfig {
         // Validation filter for checking JWT in every request
         JwtValidationFilter jwtValidationFilter = new JwtValidationFilter(authenticationManager);
 
+        // refresh filter for checking JWT in every request
+        JWTRefreshFilter jwtRefreshFilter = new JWTRefreshFilter(jwtUtil, authenticationManager);
 
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/user-register").permitAll()
+                        .requestMatchers("/api/users").hasRole("USER") // role based authorization, AuthorizationFilter got invoke
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(csrf -> csrf.disable())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)  // generate token filter
-                .addFilterAfter(jwtValidationFilter, JWTAuthenticationFilter.class);
+                .addFilterAfter(jwtValidationFilter, JWTAuthenticationFilter.class) // validate token filter
+                .addFilterAfter(jwtRefreshFilter, JwtValidationFilter.class); // refresh token filter
         return http.build();
     }
 
